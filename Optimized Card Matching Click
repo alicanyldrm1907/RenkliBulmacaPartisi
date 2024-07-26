@@ -1,0 +1,115 @@
+// --------------------- CardClick Script ---------------------
+
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.EventSystems;
+
+public class CardClick : MonoBehaviour, IPointerDownHandler
+{
+    public void OnPointerDown(PointerEventData eventData)
+    {
+        if (transform.rotation.y == 0 && CardMatchingManager.selectedCard.Count < 2)
+        {
+            transform.rotation = Quaternion.Euler(0, 180, 0);
+            transform.GetChild(0).GetComponent<SpriteRenderer>().enabled = true;
+            CardMatchingManager.selectedCard.Add(gameObject);
+        }
+    }
+}
+
+
+// --------------------- CardMatchingManager Script ---------------------
+
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.UIElements;
+using UnityEngine.SceneManagement;
+
+public class CardMatchingManager : MonoBehaviour
+{
+    // Start is called before the first frame update
+    [SerializeField] private UIDocument ui;
+    [SerializeField] private VisualTreeAsset gameControl;
+    [SerializeField] private Sprite[] settingsSprite = new Sprite[4];
+    [SerializeField] private Sprite[] cardSprites;
+    [SerializeField] private GameObject[] card_2;
+    [SerializeField] private GameObject[] card_15;
+    [SerializeField] private Vector3[] card_2Positions, card_15Positions;
+    [SerializeField] private Texture[] materialTextures;
+    [SerializeField] private Material cardMaterial;
+    private List<GameObject> cards;
+    private List<Sprite> sprites;
+    private List<Vector3> positions;
+    private Transform icon;
+    private Sprite selectedSprite;
+
+    public static List<GameObject> selectedCard;
+    void Start()
+    {
+        cardMaterial.SetTexture("_MetallicGlossMap", materialTextures[Random.Range(0,materialTextures.Length)]);
+        cardMaterial.color = new Color(Random.Range(0.3f, 1.1f), Random.Range(0.3f, 1.1f), Random.Range(0.3f, 1.1f));
+        selectedCard = new List<GameObject>();
+        sprites = new List<Sprite>(cardSprites);
+        byte p = (byte) Random.Range(0,2);
+
+        if (p == 0) { cards = new List<GameObject>(); cards.AddRange(card_2); positions = new List<Vector3>(card_2Positions); }
+
+        else { cards = new List<GameObject>(); cards.AddRange(card_15); positions = new List<Vector3>(card_15Positions); }
+
+        for (int i = 0; i < cards.Count; i++)
+        {
+            if (i % 2 == 0) { selectedSprite = sprites[Random.Range(0, sprites.Count)]; sprites.Remove(selectedSprite); }
+            icon = cards[i].transform.GetChild(0);
+            icon.GetComponent<SpriteRenderer>().sprite = selectedSprite;
+            cards[i].GetComponent<Renderer>().material = cardMaterial;
+            Vector3 pos = positions[Random.Range(0, positions.Count)];
+            /*SceneManager.MoveGameObjectToScene(*/Instantiate(cards[i].transform, pos, Quaternion.identity)/*.gameObject, SceneManager.GetSceneByName(MainMenu.modeName))*/;
+            positions.Remove(pos);
+        }
+
+        Camera.main.backgroundColor = new Color(Random.Range(0, 1.1f), Random.Range(0, 1.1f), Random.Range(0, 1.1f),255);
+
+        ui = GetComponent<UIDocument>();
+        ui.rootVisualElement.Q<Button>("UnloadPuzzle").RegisterCallback<ClickEvent>(Unload);
+
+        StartCoroutine(CardControl());
+    }
+
+    public void Unload(ClickEvent e)
+    {
+        GameObject[] cards = GameObject.FindGameObjectsWithTag("Card");
+        foreach (GameObject card in cards) Destroy(card);
+        GameObject.Find("GameStartManager").GetComponent<UIDocument>().visualTreeAsset = gameControl;
+        GameObject.Find("GameStartManager").GetComponent<UIDocument>().rootVisualElement.Q<Button>("Settings").style.backgroundImage = new StyleBackground(settingsSprite[MainMenu.t]);
+        GameObject.Find("GameStartManager").GetComponent<UIDocument>().rootVisualElement.Q<Button>("Settings").RegisterCallback<ClickEvent>(GameObject.Find("GameStartManager").GetComponent<GameStartManager>().EnterSettings);
+        ChestOpening.isTrigger = false;
+        GameStartManager.mainCamera.GetComponent<Camera>().enabled = true;
+        GameStartManager.joyStick.SetActive(true);
+        GameStartManager.jump.SetActive(true);
+        SceneManager.UnloadSceneAsync(MainMenu.modeName);
+    }
+
+    IEnumerator CardControl()
+    {
+        while (true)
+        {
+            yield return new WaitUntil(() => selectedCard.Count == 2);
+            yield return new WaitForSeconds(0.3f);
+            if (selectedCard[0].transform.GetChild(0).GetComponent<SpriteRenderer>().sprite == selectedCard[1].transform.GetChild(0).GetComponent<SpriteRenderer>().sprite)
+            {
+                Destroy(selectedCard[0]);
+                Destroy(selectedCard[1]);
+            }
+            else
+            {
+                selectedCard[0].transform.rotation = Quaternion.Euler(0, 0, 0);
+                selectedCard[0].transform.GetChild(0).GetComponent<SpriteRenderer>().enabled = false;
+                selectedCard[1].transform.rotation = Quaternion.Euler(0, 0, 0);
+                selectedCard[1].transform.GetChild(0).GetComponent<SpriteRenderer>().enabled = false;
+            }
+            selectedCard.Clear();
+        }
+    }
+}
