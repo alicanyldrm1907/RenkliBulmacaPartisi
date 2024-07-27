@@ -1,0 +1,102 @@
+// ---------------------------------------- ShadowClick script ----------------------------------------
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.EventSystems;
+
+public class ShadowClick : MonoBehaviour, IPointerDownHandler
+{
+    public void OnPointerDown(PointerEventData eventData)
+    {
+        GameObject.Find("ShadowMatchingManager").GetComponent<ShadowMatchingManager>().SelectTick(gameObject);
+    }
+}
+
+// ---------------------------------------- ShadowMatchingManager script ----------------------------------------
+
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.UIElements;
+using UnityEngine.SceneManagement;
+
+public class ShadowMatchingManager : MonoBehaviour
+{
+    [SerializeField] private UIDocument ui;
+    [SerializeField] private VisualTreeAsset gameControl;
+    [SerializeField] private Sprite[] settingsSprite;
+    [SerializeField] private GameObject[] reels, shadows;
+    [SerializeField] private Vector3[] reelsPositions, shadowsPositions;
+    [SerializeField] private Transform select, tick, wrong;
+    private Transform selected;
+    private List<Transform> ticks;
+    List<GameObject> clickedObject, selectedReels, selectedShadows;
+    List<Vector3> positionReel, positionShadow;
+    void Start()
+    {
+        clickedObject = new List<GameObject>();
+        selectedReels = new List<GameObject>(reels);
+        selectedShadows = new List<GameObject>(shadows);
+        ticks = new List<Transform>();
+        positionReel = new List<Vector3>(reelsPositions);
+        positionShadow = new List<Vector3>(shadowsPositions);
+
+        Camera.main.backgroundColor = new Color(Random.Range(0, 1.1f), Random.Range(0, 1.1f), Random.Range(0, 1.1f));
+
+        ui = GetComponent<UIDocument>();
+        ui.rootVisualElement.Q<Button>("UnloadPuzzle").RegisterCallback<ClickEvent>(Unload);
+
+        for (int i = 0; i < 5; i++)
+        {
+            int p = Random.Range(0, selectedReels.Count);
+            Vector3 reel = positionReel[Random.Range(0, positionReel.Count)];
+            Vector3 shadow = positionShadow[Random.Range(0, positionShadow.Count)];
+            Debug.Log("Reel : " + reel.x + " " + reel.y + " " + reel.z + " Shadow : " + shadow.x + " " + shadow.y + " " + shadow.z);
+            /*SceneManager.MoveGameObjectToScene(*/Instantiate(selectedReels[p].transform, reel, Quaternion.identity)/*.gameObject, SceneManager.GetSceneByName(MainMenu.modeName))*/;
+            /*SceneManager.MoveGameObjectToScene(*/Instantiate(selectedShadows[p].transform, shadow, Quaternion.identity)/*.gameObject, SceneManager.GetSceneByName(MainMenu.modeName))*/;
+            selectedReels.Remove(reels[p]);
+            selectedShadows.Remove(shadows[p]);
+            positionReel.Remove(reel);
+            positionShadow.Remove(shadow);
+        }
+    }
+    public void SelectTick(GameObject p)
+    {
+        clickedObject.Add(p);
+        if (clickedObject.Count < 2) selected = Instantiate(select, p.transform.position, Quaternion.identity);
+        else
+        {
+            string reel = clickedObject[0].name.Substring(0,clickedObject[0].name.IndexOf('_'));
+            string shadow = clickedObject[1].name.Substring(0, clickedObject[1].name.IndexOf('_'));
+            if (reel == shadow)
+            {
+                Destroy(selected.gameObject);
+                ticks.Add(Instantiate(tick, clickedObject[0].transform.position, Quaternion.identity));
+                ticks.Add(Instantiate(tick, clickedObject[1].transform.position, Quaternion.identity));
+                clickedObject[0].GetComponent<Collider2D>().enabled = false;
+                clickedObject[1].GetComponent<Collider2D>().enabled = false;
+                clickedObject.Clear();
+            }
+            else
+            {
+                Destroy(selected.gameObject);
+                Destroy(Instantiate(wrong, new Vector3(0, 50, 0), Quaternion.identity).gameObject, 0.5f);
+                clickedObject.Clear();
+            }
+        }
+    }
+    private void Unload(ClickEvent e)
+    {
+        ticks.Clear();
+        GameObject[] shadowMatchingObject = GameObject.FindGameObjectsWithTag("ShadowMatchingObject");
+        foreach (GameObject shadow in shadowMatchingObject) Destroy(shadow);
+        GameObject.Find("GameStartManager").GetComponent<UIDocument>().visualTreeAsset = gameControl;
+        GameObject.Find("GameStartManager").GetComponent<UIDocument>().rootVisualElement.Q<Button>("Settings").style.backgroundImage = new StyleBackground(settingsSprite[MainMenu.t]);
+        GameObject.Find("GameStartManager").GetComponent<UIDocument>().rootVisualElement.Q<Button>("Settings").RegisterCallback<ClickEvent>(GameObject.Find("GameStartManager").GetComponent<GameStartManager>().EnterSettings);
+        ChestOpening.isTrigger = false;
+        GameStartManager.mainCamera.GetComponent<Camera>().enabled = true;
+        GameStartManager.joyStick.SetActive(true);
+        GameStartManager.jump.SetActive(true);
+        SceneManager.UnloadSceneAsync(MainMenu.modeName);
+    }
+}
