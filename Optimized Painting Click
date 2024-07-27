@@ -1,1 +1,92 @@
+// ---------------------------------------------------- PaintingClick Script ----------------------------------------------------
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.EventSystems;
+
+public class PaintingClick : MonoBehaviour, IPointerDownHandler
+{
+    public void OnPointerDown(PointerEventData eventData)
+    {
+        GetComponent<SpriteRenderer>().color = PaintingManager.selectedColor;
+    }
+}
+
+// ---------------------------------------------------- PaintingSelectColorClick Script ----------------------------------------------------
+
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.EventSystems;
+
+public class PaintingSelectColorClick : MonoBehaviour, IPointerDownHandler
+{
+    public void OnPointerDown(PointerEventData eventData)
+    {
+        PaintingManager.selectedColor = GetComponent<SpriteRenderer>().color;
+    }
+}
+
+// ---------------------------------------------------- PaintingManager Script ----------------------------------------------------
+
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.UIElements;
+using UnityEngine.SceneManagement;
+
+public class PaintingManager : MonoBehaviour
+{
+    // Start is called before the first frame update
+    [SerializeField] private UIDocument ui;
+    [SerializeField] private VisualTreeAsset gameControl;
+    [SerializeField] private Sprite[] settingsSprite;
+    [SerializeField] private GameObject[] paints, paintColors;
+    private List<Color> list;
+    private GameObject paint, paintColor;
+    [SerializeField] private Transform colorTick;
+    public static Color selectedColor;
+    void Start()
+    {
+        selectedColor = new Color(1, 1, 1);
+        Camera.main.backgroundColor = new Color(Random.Range(0.5f, 1.1f), Random.Range(0, 1.1f), Random.Range(0, 1.1f), 255);
+        list = new List<Color>();
+        int t = Random.Range(0, paints.Length);
+        paint = Instantiate(paints[t]);
+        paintColor = Instantiate(paintColors[t]);
+        SceneManager.MoveGameObjectToScene(paint, SceneManager.GetSceneByName(MainMenu.modeName));
+        SceneManager.MoveGameObjectToScene(paintColor, SceneManager.GetSceneByName(MainMenu.modeName));
+        int p = 0;
+        for (int i = 0; i < paintColor.transform.childCount; i++)
+        {
+            if (!list.Contains(paintColor.transform.GetChild(i).GetComponent<SpriteRenderer>().color))
+            {
+                list.Add(paintColor.transform.GetChild(i).GetComponent<SpriteRenderer>().color);
+                Transform color = Instantiate(colorTick, new Vector3(colorTick.transform.position.x + p, colorTick.transform.position.y, colorTick.transform.position.z), Quaternion.identity);
+                color.GetComponent<SpriteRenderer>().color = paintColor.transform.GetChild(i).GetComponent<SpriteRenderer>().color;
+                SceneManager.MoveGameObjectToScene(color.gameObject, SceneManager.GetSceneByName(MainMenu.modeName));
+                p++;
+            }
+        }
+
+        ui = GetComponent<UIDocument>();
+        ui.rootVisualElement.Q<Button>("UnloadPuzzle").RegisterCallback<ClickEvent>(Unload);
+    }
+
+    private void Unload(ClickEvent e)
+    {
+        GameObject[] p = GameObject.FindGameObjectsWithTag("Painting");
+        for (int i = 0; i < p.Length; i++) Destroy(p[i]);
+        GameObject.Find("GameStartManager").GetComponent<UIDocument>().visualTreeAsset = gameControl;
+        GameObject.Find("GameStartManager").GetComponent<UIDocument>().rootVisualElement.Q<Button>("Settings").style.backgroundImage = new StyleBackground(settingsSprite[MainMenu.t]);
+        GameObject.Find("GameStartManager").GetComponent<UIDocument>().rootVisualElement.Q<Button>("Settings").RegisterCallback<ClickEvent>(GameObject.Find("GameStartManager").GetComponent<GameStartManager>().EnterSettings);
+        ChestOpening.isTrigger = false;
+        GameStartManager.mainCamera.GetComponent<Camera>().enabled = true;
+        GameStartManager.joyStick.SetActive(true);
+        GameStartManager.jump.SetActive(true);
+        SceneManager.UnloadSceneAsync(MainMenu.modeName);
+    }
+}
+
+
 
