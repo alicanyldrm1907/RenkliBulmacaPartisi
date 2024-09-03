@@ -1,1 +1,139 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.UIElements;
+using UnityEngine.SceneManagement;
 
+public class MathManager : MonoBehaviour
+{
+    [SerializeField] private UIDocument ui;
+    [SerializeField] private VisualTreeAsset gameControl;
+    [SerializeField] private Sprite[] settingsSprite;
+    private Label mathQuestion, mathAnswerNumber, mathTrue, mathFalse, mathSecond;
+    private Button mathAnswer1, mathAnswer2, mathAnswer3;
+    List<Button> list;
+    int number1, number2;
+    float sum = 0;
+    int sec = 15, answerNumber = 0;
+
+    string[] math = { "+", "-", "x", "÷" };
+    byte p;
+    void Start()
+    {
+        Camera.main.backgroundColor = new Color(Random.Range(0, 1.1f), Random.Range(0, 1.1f), Random.Range(0, 1.1f), 255);
+
+        ui = GetComponent<UIDocument>();
+        ui.rootVisualElement.Q<Button>("UnloadPuzzle").RegisterCallback<ClickEvent>(Unload);
+
+        mathQuestion = ui.rootVisualElement.Q<Label>("MathQuestion");
+        mathAnswerNumber = ui.rootVisualElement.Q<Label>("MathAnswerNumber");
+        mathTrue = ui.rootVisualElement.Q<Label>("MathTrue");
+        mathFalse = ui.rootVisualElement.Q<Label>("MathFalse");
+        mathSecond = ui.rootVisualElement.Q<Label>("MathSecond");
+        mathAnswer1 = ui.rootVisualElement.Q<Button>("MathAnswer1");
+        mathAnswer2 = ui.rootVisualElement.Q<Button>("MathAnswer2");
+        mathAnswer3 = ui.rootVisualElement.Q<Button>("MathAnswer3");
+
+        mathQuestion.style.display = DisplayStyle.Flex;
+        mathAnswerNumber.style.display = DisplayStyle.Flex;
+        mathAnswer1.style.display = DisplayStyle.Flex;
+        mathAnswer2.style.display = DisplayStyle.Flex;
+        mathAnswer3.style.display = DisplayStyle.Flex;
+        mathSecond.style.display = DisplayStyle.Flex;
+
+        mathAnswer1.RegisterCallback<ClickEvent>(GetAnswer);
+        mathAnswer2.RegisterCallback<ClickEvent>(GetAnswer);
+        mathAnswer3.RegisterCallback<ClickEvent>(GetAnswer);
+
+        mathAnswerNumber.text = "Doğru Cevap Sayısı : " + answerNumber;
+
+        GetQuestion();
+
+        InvokeRepeating(nameof(Time), 1, 1);
+    }
+
+    private void Time()
+    {
+        if (sec == 0)
+        {
+            ui.rootVisualElement.Q<VisualElement>("MathFinished").style.display = DisplayStyle.Flex;
+            ui.rootVisualElement.Q<Label>("FinishedText").text = mathAnswerNumber.text;
+            CancelInvoke();
+        }
+        else
+        {
+            sec--;
+            mathSecond.text = sec.ToString();
+        }
+    }
+
+    private void GetQuestion()
+    {
+        mathTrue.style.display = DisplayStyle.None;
+        mathFalse.style.display = DisplayStyle.None;
+        list = new List<Button>() { mathAnswer1, mathAnswer2, mathAnswer3 };
+        number1 = Random.Range(0, 100);
+        number2 = Random.Range(0, 100);
+
+        p = (byte)Random.Range(0, math.Length);
+
+        mathQuestion.text = number1 + " " + math[p] + " " + number2;
+
+        sum = 0;
+
+        switch (p)
+        {
+            case 0:
+                sum = number1 + number2;
+                break;
+            case 1:
+                sum = number1 - number2;
+                break;
+            case 2:
+                sum = number1 * number2;
+                break;
+            case 3:
+                sum = number1 / number2;
+                break;
+        }
+
+        Button pp = list[Random.Range(0, list.Count)];
+        pp.text = sum.ToString();
+        list.Remove(pp);
+
+        list[0].text = (sum - 1).ToString();
+        list[1].text = (sum + 1).ToString();
+
+        mathAnswer1.focusable = true;
+        mathAnswer2.focusable = true;
+        mathAnswer3.focusable = true;
+    }
+
+    private void GetAnswer(ClickEvent e)
+    {
+        mathAnswer1.focusable = true;
+        mathAnswer2.focusable = true;
+        mathAnswer3.focusable = true;
+
+        if ((e.target as Button).text == sum.ToString())
+        {
+            mathTrue.style.display = DisplayStyle.Flex;
+            mathAnswerNumber.text = "Doğru Cevap Sayısı : " + (++answerNumber);
+        }
+        else mathFalse.style.display = DisplayStyle.Flex;
+
+        Invoke(nameof(GetQuestion), 1);
+    }
+
+    public void Unload(ClickEvent e)
+    {
+        GameObject.Find("GameStartManager").GetComponent<UIDocument>().visualTreeAsset = gameControl;
+        GameObject.Find("GameStartManager").GetComponent<UIDocument>().rootVisualElement.Q<Button>("Settings").style.backgroundImage = new StyleBackground(settingsSprite[MainMenu.t]);
+        GameObject.Find("GameStartManager").GetComponent<UIDocument>().rootVisualElement.Q<Button>("Settings").RegisterCallback<ClickEvent>(GameObject.Find("GameStartManager").GetComponent<GameStartManager>().EnterSettings);
+        ChestOpening.isTrigger = false;
+        GameStartManager.mainCamera.GetComponent<Camera>().enabled = true;
+        GameStartManager.joyStick.SetActive(true);
+        GameStartManager.jump.SetActive(true);
+        SceneManager.UnloadSceneAsync(MainMenu.modeName);
+    }
+}
