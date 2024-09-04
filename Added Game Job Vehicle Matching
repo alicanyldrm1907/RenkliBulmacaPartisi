@@ -1,0 +1,104 @@
+// First Script
+
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.EventSystems;
+
+public class JobVehicleClick : MonoBehaviour, IPointerDownHandler
+{
+    public void OnPointerDown(PointerEventData eventData)
+    {
+        GameObject.Find("JobVehicleMatchingManager").GetComponent<JobVehicleMatchingManager>().SelectTick(gameObject);
+    }
+}
+
+// Second Script
+
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.UIElements;
+using UnityEngine.SceneManagement;
+
+public class JobVehicleMatchingManager : MonoBehaviour
+{
+    [SerializeField] private UIDocument ui;
+    [SerializeField] private VisualTreeAsset gameControl;
+    [SerializeField] private Sprite[] settingsSprite = new Sprite[4];
+    [SerializeField] private Vector3[] upPositions, downPositions;
+    [SerializeField] private GameObject[] jobs, vehicles;
+    [SerializeField] private Transform select, tick, wrong;
+    private Transform selected;
+    List<Vector3> up, down;
+    List<GameObject> job,vehicle;
+    public static List<GameObject> clickedObject;
+    private List<Transform> ticks;
+    void Start()
+    {
+        clickedObject = new List<GameObject>();
+        ticks = new List<Transform>();
+        job = new List<GameObject>(jobs);
+        vehicle = new List<GameObject>(vehicles);
+        up = new List<Vector3>(upPositions);
+        down = new List<Vector3>(downPositions);
+        ui = GetComponent<UIDocument>();
+        ui.rootVisualElement.Q<Button>("UnloadPuzzle").RegisterCallback<ClickEvent>(Unload);
+        Camera.main.backgroundColor = new Color(Random.Range(0, 1.1f), Random.Range(0, 1.1f), Random.Range(0, 1.1f));
+        for (int i = 0; i < 6; i++)
+        {
+            int selectedJob = Random.Range(0, job.Count);
+            GameObject jobb = job[selectedJob];
+            GameObject vehiclee = vehicle[selectedJob];
+            Vector3 upp = up[Random.Range(0, up.Count)];
+            Vector3 downn = down[Random.Range(0, up.Count)];
+            SceneManager.MoveGameObjectToScene(Instantiate(jobb, upp, Quaternion.identity).gameObject, SceneManager.GetSceneByName(MainMenu.modeName));
+            SceneManager.MoveGameObjectToScene(Instantiate(vehiclee, downn, Quaternion.identity).gameObject, SceneManager.GetSceneByName(MainMenu.modeName));
+            up.Remove(upp);
+            down.Remove(downn);
+            job.Remove(jobb);
+            vehicle.Remove(vehiclee);
+        }
+    }
+
+    public void SelectTick(GameObject p)
+    {
+        clickedObject.Add(p);
+        if (clickedObject.Count < 2) selected = Instantiate(select, p.transform.position, Quaternion.identity);
+        else
+        {
+            string job = clickedObject[0].name.Substring(0, clickedObject[0].name.IndexOf('_'));
+            string vehicle = clickedObject[1].name.Substring(0, clickedObject[1].name.IndexOf('_'));
+            if (job == vehicle)
+            {
+                Destroy(selected.gameObject);
+                ticks.Add(Instantiate(tick, clickedObject[0].transform.position, Quaternion.identity));
+                ticks.Add(Instantiate(tick, clickedObject[1].transform.position, Quaternion.identity));
+                clickedObject[0].GetComponent<Collider2D>().enabled = false;
+                clickedObject[1].GetComponent<Collider2D>().enabled = false;
+                clickedObject.Clear();
+            }
+            else
+            {
+                Destroy(selected.gameObject);
+                Destroy(Instantiate(wrong, new Vector3(0, 50, 0), Quaternion.identity).gameObject, 0.5f);
+                clickedObject.Clear();
+            }
+        }
+    }
+
+    private void Unload(ClickEvent e)
+    {
+        ticks.Clear();
+        GameObject[] shadowMatchingObject = GameObject.FindGameObjectsWithTag("PatternMatchingObject");
+        foreach (GameObject pattern in shadowMatchingObject) Destroy(pattern);
+        GameObject.Find("GameStartManager").GetComponent<UIDocument>().visualTreeAsset = gameControl;
+        GameObject.Find("GameStartManager").GetComponent<UIDocument>().rootVisualElement.Q<Button>("Settings").style.backgroundImage = new StyleBackground(settingsSprite[MainMenu.t]);
+        GameObject.Find("GameStartManager").GetComponent<UIDocument>().rootVisualElement.Q<Button>("Settings").RegisterCallback<ClickEvent>(GameObject.Find("GameStartManager").GetComponent<GameStartManager>().EnterSettings);
+        ChestOpening.isTrigger = false;
+        GameStartManager.mainCamera.GetComponent<Camera>().enabled = true;
+        GameStartManager.joyStick.SetActive(true);
+        GameStartManager.jump.SetActive(true);
+        SceneManager.UnloadSceneAsync(MainMenu.modeName);
+    }
+}
