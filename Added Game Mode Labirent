@@ -22,3 +22,53 @@
 // Labirent 22
 // Labirent 23
 // Labirent 24
+
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.UIElements;
+using UnityEngine.SceneManagement;
+
+public class LabirentManager : MonoBehaviour
+{
+    // Start is called before the first frame update
+    [SerializeField] private Transform startPosition;
+    [SerializeField] private UIDocument ui;
+    [SerializeField] private VisualTreeAsset gameControl;
+    [SerializeField] private Sprite[] settingsSprite = new Sprite[4];
+    [SerializeField] private GameObject[] labirents;
+    [SerializeField] private GameObject character;
+    GameObject p, c;
+
+    private void Awake()
+    {
+        ui = GetComponent<UIDocument>();
+        ui.rootVisualElement.Q<Button>("UnloadPuzzle").RegisterCallback<ClickEvent>(Unload);
+        p = Instantiate(labirents[Random.Range(0, labirents.Length)]);
+        SceneManager.MoveGameObjectToScene(p, SceneManager.GetSceneByName(MainMenu.modeName));
+        Camera.main.backgroundColor = new Color(Random.Range(0.5f, 1.1f), Random.Range(0.5f, 1.1f), Random.Range(0.5f, 1.1f));
+        startPosition = p.transform.GetChild(0);
+        c = Instantiate(character.transform, startPosition.transform.position, Quaternion.identity).gameObject;
+        SceneManager.MoveGameObjectToScene(c, SceneManager.GetSceneByName(MainMenu.modeName));
+    }
+    void Start()
+    {
+        GameObject[] squares = GameObject.FindGameObjectsWithTag("Square");
+        Color color = new Color(Random.Range(0.2f, 1.1f), Random.Range(0.2f, 1.1f), Random.Range(0.2f, 1.1f));
+        for (int i = 0; i < squares.Length; i++) squares[i].GetComponent<SpriteRenderer>().color = color;
+    }
+
+    private void Unload(ClickEvent e)
+    {
+        GameObject.Find("GameStartManager").GetComponent<UIDocument>().visualTreeAsset = gameControl;
+        GameObject.Find("GameStartManager").GetComponent<UIDocument>().rootVisualElement.Q<Button>("Settings").style.backgroundImage = new StyleBackground(settingsSprite[MainMenu.t]);
+        GameObject.Find("GameStartManager").GetComponent<UIDocument>().rootVisualElement.Q<Button>("Settings").RegisterCallback<ClickEvent>(GameObject.Find("GameStartManager").GetComponent<GameStartManager>().EnterSettings);
+        ChestOpening.isTrigger = false;
+        GameStartManager.mainCamera.GetComponent<Camera>().enabled = true;
+        GameStartManager.joyStick.SetActive(true);
+        GameStartManager.jump.SetActive(true);
+        SceneManager.UnloadSceneAsync(MainMenu.modeName);
+    }
+}
+
+
