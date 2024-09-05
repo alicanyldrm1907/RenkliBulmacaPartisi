@@ -1,1 +1,76 @@
+//         First Script
 
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.EventSystems;
+
+public class PuzzleClick : MonoBehaviour, IPointerDownHandler, IDragHandler, IPointerUpHandler
+{
+    // Start is called before the first frame update
+    Vector3 location;
+    void Start()
+    {
+        location = transform.position;
+    }
+    public void OnPointerDown(PointerEventData eventData)
+    {
+        GetComponent<SpriteRenderer>().sortingOrder = 3;
+        Vector3 pos = Camera.main.ScreenToWorldPoint(eventData.position);
+        pos.z = 0;
+        transform.position = pos;
+    }
+    public void OnDrag(PointerEventData eventData)
+    {
+        Vector3 pos = Camera.main.ScreenToWorldPoint(eventData.position);
+        pos.z = 0;
+        transform.position = pos;
+    }
+
+    public void OnPointerUp(PointerEventData eventData)
+    {
+        if (Physics2D.OverlapPoint(GameObject.Find(gameObject.name + "Location").transform.position))
+        {
+            transform.position = GameObject.Find(gameObject.name + "Location").transform.position;
+            GetComponent<SpriteRenderer>().sortingOrder = 2;
+            GetComponent<PuzzleClick>().enabled = false;
+        }
+        else transform.position = location;
+    }
+}
+
+//       Second Script
+
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.UIElements;
+using UnityEngine.SceneManagement;
+
+public class PuzzleManager : MonoBehaviour
+{
+    // Start is called before the first frame update
+    [SerializeField] private UIDocument ui;
+    [SerializeField] private VisualTreeAsset gameControl;
+    [SerializeField] private Sprite[] settingsSprite;
+    [SerializeField] private GameObject[] puzzleGames;
+    void Start()
+    {
+        ui = GetComponent<UIDocument>();
+        ui.rootVisualElement.Q<Button>("UnloadPuzzle").RegisterCallback<ClickEvent>(Unload);
+        SceneManager.MoveGameObjectToScene(Instantiate(puzzleGames[Random.Range(0, puzzleGames.Length)]).gameObject,SceneManager.GetSceneByName(MainMenu.modeName));
+    }
+
+    private void Unload(ClickEvent e)
+    {
+        Destroy(GameObject.FindGameObjectWithTag("Puzzle"));
+        GameObject.Find("GameStartManager").GetComponent<UIDocument>().visualTreeAsset = gameControl;
+        GameObject.Find("GameStartManager").GetComponent<UIDocument>().rootVisualElement.Q<Button>("Settings").style.backgroundImage = new StyleBackground(settingsSprite[MainMenu.t]);
+        GameObject.Find("GameStartManager").GetComponent<UIDocument>().rootVisualElement.Q<Button>("Settings").RegisterCallback<ClickEvent>(GameObject.Find("GameStartManager").GetComponent<GameStartManager>().EnterSettings);
+        ChestOpening.isTrigger = false;
+        GameStartManager.mainCamera.GetComponent<Camera>().enabled = true;
+        GameStartManager.joyStick.SetActive(true);
+        GameStartManager.jump.SetActive(true);
+        SceneManager.UnloadSceneAsync(MainMenu.modeName);
+    }
+}
