@@ -72,10 +72,13 @@ public class JobVehicleMatchingManager : MonoBehaviour
             if (job == vehicle)
             {
                 Destroy(selected.gameObject);
-                ticks.Add(Instantiate(tick, clickedObject[0].transform.position, Quaternion.identity));
-                ticks.Add(Instantiate(tick, clickedObject[1].transform.position, Quaternion.identity));
-                clickedObject[0].GetComponent<Collider2D>().enabled = false;
-                clickedObject[1].GetComponent<Collider2D>().enabled = false;
+                if (clickedObject[0] != clickedObject[1])
+                {
+                    ticks.Add(Instantiate(tick, clickedObject[0].transform.position, Quaternion.identity));
+                    ticks.Add(Instantiate(tick, clickedObject[1].transform.position, Quaternion.identity));
+                    clickedObject[0].GetComponent<Collider2D>().enabled = false;
+                    clickedObject[1].GetComponent<Collider2D>().enabled = false;
+                }
                 clickedObject.Clear();
             }
             else
@@ -102,3 +105,4 @@ public class JobVehicleMatchingManager : MonoBehaviour
         SceneManager.UnloadSceneAsync(MainMenu.modeName);
     }
 }
+
