@@ -1,1 +1,168 @@
+//           First Click
+
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.EventSystems;
+
+public class BalloonClick : MonoBehaviour, IPointerDownHandler
+{
+    [SerializeField] ParticleSystem particle;
+    private void Start()
+    {
+        particle = GameObject.Find("BalloonPoppingManager").GetComponent<BalloonPoppingManager>().particle;
+    }
+    private void OnEnable()
+    {
+        StartCoroutine(Up());
+    }
+
+    private void OnDisable()
+    {
+        transform.position = new Vector3(Random.Range(-6.25f, 6.25f), 40, 0);
+    }
+
+    public void OnPointerDown(PointerEventData eventData)
+    {
+        BalloonPoppingManager.balloon.Enqueue(gameObject);
+        particle.startColor = GetComponent<SpriteRenderer>().color;
+        particle.transform.position = transform.position;
+        particle.Play();
+        gameObject.SetActive(false);
+        GameObject.Find("BalloonPoppingManager").GetComponent<BalloonPoppingManager>().BalloonNumber();
+    }
+
+    IEnumerator Up()
+    {
+        while(transform.position.y < 55.5f)
+        {
+            transform.position = Vector3.MoveTowards(transform.position, transform.position + Vector3.up * 15, 5 * Time.deltaTime);
+            yield return null;
+        }
+        BalloonPoppingManager.balloon.Enqueue(gameObject);
+        gameObject.SetActive(false);
+    }
+}
+
+//         Second Click
+
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.UIElements;
+using UnityEngine.SceneManagement;
+
+public class BalloonPoppingManager : MonoBehaviour
+{
+    [SerializeField] private UIDocument ui;
+    [SerializeField] private VisualTreeAsset gameControl;
+    [SerializeField] private Sprite[] settingsSprite;
+    [SerializeField] private GameObject[] balloons;
+    public ParticleSystem particle;
+    public static Queue<GameObject> balloon;
+    private byte min, sec;
+    float starttime = 3;
+    int balloonNumber = 0;
+    void Start()
+    {
+        balloonNumber = 0;
+
+        min = 1;
+        sec = 0;
+        balloon = new Queue<GameObject>();
+
+        Camera.main.backgroundColor = new Color(Random.Range(0, 1.1f), Random.Range(0, 1.1f), Random.Range(0, 1.1f), 255);
+
+        for (int i = 0; i < 40; i++)
+        {
+            GameObject p = Instantiate(balloons[Random.Range(0, balloons.Length)]);
+            SceneManager.MoveGameObjectToScene(p, SceneManager.GetSceneByName(MainMenu.modeName));
+            p.SetActive(false);
+            balloon.Enqueue(p);
+        }
+        ui = GetComponent<UIDocument>();
+        ui.rootVisualElement.Q<Button>("UnloadPuzzle").RegisterCallback<ClickEvent>(Unload);
+        ui.rootVisualElement.Q<Label>("BalloonTime").style.display = DisplayStyle.Flex;
+        ui.rootVisualElement.Q<Label>("StartTime").style.display = DisplayStyle.Flex;
+        ui.rootVisualElement.Q<Label>("BalloonNumber").style.display = DisplayStyle.Flex;
+        ui.rootVisualElement.Q<Label>("BalloonTime").text = string.Format("{0:00}", min) + ":" + string.Format("{0:00}", sec);
+        ui.rootVisualElement.Q<Label>("StartTime").text = starttime.ToString();
+        StartCoroutine(StartTime());
+    }
+
+    public void BalloonNumber()
+    {
+        balloonNumber++;
+        ui.rootVisualElement.Q<Label>("BalloonNumber").text = balloonNumber.ToString();
+    } 
+
+    IEnumerator StartTime()
+    {
+        while (starttime >= 1)
+        {
+            yield return new WaitForSeconds(1);
+            starttime--;
+            ui.rootVisualElement.Q<Label>("StartTime").text = starttime.ToString();
+        }
+
+        ui.rootVisualElement.Q<Label>("StartTime").style.display = DisplayStyle.None;
+        StartCoroutine(Time());
+        StartCoroutine(SpawnBalloon());
+        starttime = 1;
+        InvokeRepeating(nameof(Faster), 10, 10);
+    }
+
+    private void Faster()
+    {
+        if (min == 0 && sec == 0) CancelInvoke(nameof(Faster));
+
+        StopCoroutine(SpawnBalloon());
+        starttime -= 0.1f;
+        StartCoroutine(SpawnBalloon());
+
+    }
+
+    IEnumerator Time()
+    {
+        while (min != 0 || sec != 0)
+        {
+            yield return new WaitForSeconds(1);
+            if (sec == 0)
+            {
+                min--;
+                sec = 59;
+            }
+            else sec--;
+            ui.rootVisualElement.Q<Label>("BalloonTime").text = string.Format("{0:00}", min) + ":" + string.Format("{0:00}", sec);
+        }
+
+        ui.rootVisualElement.Q<VisualElement>("BalloonFinished").style.display = DisplayStyle.Flex;
+        ui.rootVisualElement.Q<Label>("FinishedTextt").text = "Patlatılan balon sayısı : " + ui.rootVisualElement.Q<Label>("BalloonNumber").text;
+    }
+
+    IEnumerator SpawnBalloon()
+    {
+        while (min != 0 || sec != 0)
+        {
+            yield return new WaitForSeconds(starttime);
+            GameObject balloonn = balloon.Dequeue();
+            balloonn.SetActive(true);
+        }
+
+        GameObject[] activeBalloon = GameObject.FindGameObjectsWithTag("Balloon");
+        for (int i = 0; i < activeBalloon.Length; i++) activeBalloon[i].SetActive(false);
+    }
+
+    private void Unload(ClickEvent e)
+    {
+        GameObject.Find("GameStartManager").GetComponent<UIDocument>().visualTreeAsset = gameControl;
+        GameObject.Find("GameStartManager").GetComponent<UIDocument>().rootVisualElement.Q<Button>("Settings").style.backgroundImage = new StyleBackground(settingsSprite[MainMenu.t]);
+        GameObject.Find("GameStartManager").GetComponent<UIDocument>().rootVisualElement.Q<Button>("Settings").RegisterCallback<ClickEvent>(GameObject.Find("GameStartManager").GetComponent<GameStartManager>().EnterSettings);
+        ChestOpening.isTrigger = false;
+        GameStartManager.mainCamera.GetComponent<Camera>().enabled = true;
+        GameStartManager.joyStick.SetActive(true);
+        GameStartManager.jump.SetActive(true);
+        SceneManager.UnloadSceneAsync(MainMenu.modeName);
+    }
+}
 
