@@ -38,6 +38,7 @@ public class FindingDifferenceManager : MonoBehaviour
     [SerializeField] private VisualTreeAsset gameControl;
     [SerializeField] private Sprite[] settingsSprite;
     [SerializeField] private GameObject[] FindingDifference;
+    int differenceNumber;
     void Start()
     {
         Camera.main.backgroundColor = new Color(Random.Range(0, 1.1f), Random.Range(0, 1.1f), Random.Range(0, 1.1f), 255);
@@ -46,7 +47,22 @@ public class FindingDifferenceManager : MonoBehaviour
         SceneManager.MoveGameObjectToScene(p, SceneManager.GetSceneByName(MainMenu.modeName));
 
         ui = GetComponent<UIDocument>();
+        ui.rootVisualElement.Q<Label>("DifferenceNumber").style.display = DisplayStyle.Flex;
+        differenceNumber = GameObject.FindGameObjectsWithTag("Difference").Length / 2;
+        ui.rootVisualElement.Q<Label>("DifferenceNumber").text = "Kalan Fark : " + differenceNumber;
         ui.rootVisualElement.Q<Button>("UnloadPuzzle").RegisterCallback<ClickEvent>(Unload);
+    }
+
+    public void FindDifference()
+    {
+        differenceNumber--;
+        ui.rootVisualElement.Q<Label>("DifferenceNumber").text = "Kalan Fark : " + differenceNumber;
+        if (differenceNumber == 0) Invoke(nameof(Congratulations), 1);
+    }
+
+    public void Congratulations()
+    {
+        ui.rootVisualElement.Q<Label>("Congratulations").style.display = DisplayStyle.Flex;
     }
 
     public void Unload(ClickEvent e)
