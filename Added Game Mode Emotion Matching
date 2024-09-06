@@ -35,6 +35,7 @@ public class EmotionMatchingManager : MonoBehaviour
     List<GameObject> emotion, peoplee;
     public static List<GameObject> clickedObject;
     private List<Transform> ticks;
+    int match = 0;
     void Start()
     {
         clickedObject = new List<GameObject>();
@@ -46,6 +47,7 @@ public class EmotionMatchingManager : MonoBehaviour
         ui = GetComponent<UIDocument>();
         ui.rootVisualElement.Q<Button>("UnloadPuzzle").RegisterCallback<ClickEvent>(Unload);
         Camera.main.backgroundColor = new Color(Random.Range(0, 1.1f), Random.Range(0, 1.1f), Random.Range(0, 1.1f));
+        match = 0;
         for (int i = 0; i < 6; i++)
         {
             int selectedEmotion = Random.Range(0, emotion.Count);
@@ -79,6 +81,8 @@ public class EmotionMatchingManager : MonoBehaviour
                     ticks.Add(Instantiate(tick, clickedObject[1].transform.position, Quaternion.identity));
                     clickedObject[0].GetComponent<Collider2D>().enabled = false;
                     clickedObject[1].GetComponent<Collider2D>().enabled = false;
+                    match++;
+                    if (match == 5) Invoke(nameof(Congratulations), 1);
                 }
                 clickedObject.Clear();
             }
@@ -89,6 +93,11 @@ public class EmotionMatchingManager : MonoBehaviour
                 clickedObject.Clear();
             }
         }
+    }
+
+    private void Congratulations()
+    {
+        ui.rootVisualElement.Q<Label>("Congratulations").style.display = DisplayStyle.Flex;
     }
 
     private void Unload(ClickEvent e)
