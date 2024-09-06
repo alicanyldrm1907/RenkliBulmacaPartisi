@@ -1,0 +1,53 @@
+//        First Script
+
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.EventSystems;
+
+public class FindingObjectClick : MonoBehaviour, IPointerDownHandler
+{
+    public void OnPointerDown(PointerEventData eventData)
+    {
+        GetComponent<SpriteRenderer>().enabled = true;
+        GameObject.Find(gameObject.name + "_Tick").GetComponent<SpriteRenderer>().enabled = true;
+    }
+}
+
+//        Second Script
+
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.UIElements;
+using UnityEngine.SceneManagement;
+
+public class FindingObjectManager : MonoBehaviour
+{
+    [SerializeField] private UIDocument ui;
+    [SerializeField] private VisualTreeAsset gameControl;
+    [SerializeField] private Sprite[] settingsSprite;
+    [SerializeField] private GameObject[] FindingObjects;
+    void Start()
+    {
+        Camera.main.backgroundColor = new Color(Random.Range(0, 1.1f), Random.Range(0, 1.1f), Random.Range(0, 1.1f), 255);
+
+        GameObject p = Instantiate(FindingObjects[Random.Range(0, FindingObjects.Length)]);
+        SceneManager.MoveGameObjectToScene(p, SceneManager.GetSceneByName(MainMenu.modeName));
+
+        ui = GetComponent<UIDocument>();
+        ui.rootVisualElement.Q<Button>("UnloadPuzzle").RegisterCallback<ClickEvent>(Unload);
+    }
+
+    public void Unload(ClickEvent e)
+    {
+        GameObject.Find("GameStartManager").GetComponent<UIDocument>().visualTreeAsset = gameControl;
+        GameObject.Find("GameStartManager").GetComponent<UIDocument>().rootVisualElement.Q<Button>("Settings").style.backgroundImage = new StyleBackground(settingsSprite[MainMenu.t]);
+        GameObject.Find("GameStartManager").GetComponent<UIDocument>().rootVisualElement.Q<Button>("Settings").RegisterCallback<ClickEvent>(GameObject.Find("GameStartManager").GetComponent<GameStartManager>().EnterSettings);
+        ChestOpening.isTrigger = false;
+        GameStartManager.mainCamera.GetComponent<Camera>().enabled = true;
+        GameStartManager.joyStick.SetActive(true);
+        GameStartManager.jump.SetActive(true);
+        SceneManager.UnloadSceneAsync(MainMenu.modeName);
+    }
+}
