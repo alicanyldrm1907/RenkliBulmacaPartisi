@@ -23,6 +23,58 @@
 // Labirent 23
 // Labirent 24
 
+//          First Script
+
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.UIElements;
+
+public class CharacterMoveLabirent : MonoBehaviour
+{
+    private Animator animator;
+    private GameObject joyStick;
+    private GameObject finish;
+    public LayerMask layer;
+    void Start()
+    {
+        joyStick = GameObject.Find("Fixed Joystick");
+        finish = GameObject.Find("Finish");
+        animator = GetComponent<Animator>();
+        StartCoroutine(Finish());
+    }
+
+    void Update()
+    {
+        transform.Translate(Input.GetAxis("Horizontal") * Time.deltaTime, Input.GetAxis("Vertical") * Time.deltaTime, 0);
+        transform.Translate(joyStick.GetComponent<Joystick>().Horizontal * Time.deltaTime, joyStick.GetComponent<Joystick>().Vertical * Time.deltaTime, 0);
+        if (Input.GetAxis("Horizontal") < 0 || joyStick.GetComponent<Joystick>().Horizontal < 0)
+        {
+            transform.localScale = new Vector3(-0.5f, 0.5f, 0.5f);
+        }
+
+        if (Input.GetAxis("Horizontal") > 0 || joyStick.GetComponent<Joystick>().Horizontal > 0)
+        {
+            transform.localScale = new Vector3(0.5f, 0.5f, 0.5f);
+        }
+
+        animator.SetFloat("Velocity", Mathf.Abs(Input.GetAxis("Horizontal")) + Mathf.Abs(Input.GetAxis("Vertical")) + Mathf.Abs(joyStick.GetComponent<Joystick>().Horizontal)
+            + Mathf.Abs(joyStick.GetComponent<Joystick>().Vertical));
+    }
+
+    IEnumerator Finish()
+    {
+        while (true)
+        {
+            yield return new WaitUntil(() => Physics2D.OverlapCircle(finish.transform.position, 0.2f, layer));
+            GameObject.Find("LabirentManager").GetComponent<UIDocument>().rootVisualElement.Q<Label>("Congratulations").style.display = DisplayStyle.Flex;
+            StopCoroutine(Finish());
+        }
+    }
+}
+
+//       Second Script
+
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
