@@ -33,6 +33,7 @@ public class ShadowMatchingManager : MonoBehaviour
     private List<Transform> ticks;
     List<GameObject> clickedObject, selectedReels, selectedShadows;
     List<Vector3> positionReel, positionShadow;
+    int match = 0;
     void Start()
     {
         clickedObject = new List<GameObject>();
@@ -43,7 +44,7 @@ public class ShadowMatchingManager : MonoBehaviour
         positionShadow = new List<Vector3>(shadowsPositions);
 
         Camera.main.backgroundColor = new Color(Random.Range(0, 1.1f), Random.Range(0, 1.1f), Random.Range(0, 1.1f));
-
+        match = 0;
         ui = GetComponent<UIDocument>();
         ui.rootVisualElement.Q<Button>("UnloadPuzzle").RegisterCallback<ClickEvent>(Unload);
 
@@ -78,6 +79,8 @@ public class ShadowMatchingManager : MonoBehaviour
                     ticks.Add(Instantiate(tick, clickedObject[1].transform.position, Quaternion.identity));
                     clickedObject[0].GetComponent<Collider2D>().enabled = false;
                     clickedObject[1].GetComponent<Collider2D>().enabled = false;
+                    match++;
+                    if (match == 5) Invoke(nameof(Congratulations), 1);
                 }
                 clickedObject.Clear();
             }
@@ -89,6 +92,12 @@ public class ShadowMatchingManager : MonoBehaviour
             }
         }
     }
+
+    private void Congratulations()
+    {
+        ui.rootVisualElement.Q<Label>("Congratulations").style.display = DisplayStyle.Flex;
+    }
+
     private void Unload(ClickEvent e)
     {
         ticks.Clear();
@@ -104,4 +113,3 @@ public class ShadowMatchingManager : MonoBehaviour
         SceneManager.UnloadSceneAsync(MainMenu.modeName);
     }
 }
-
