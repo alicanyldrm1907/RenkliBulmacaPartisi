@@ -1,4 +1,4 @@
-//           First Click
+//           First Script
 
 using System.Collections;
 using System.Collections.Generic;
@@ -44,7 +44,7 @@ public class BalloonClick : MonoBehaviour, IPointerDownHandler
     }
 }
 
-//         Second Click
+//         Second Script
 
 using System.Collections;
 using System.Collections.Generic;
