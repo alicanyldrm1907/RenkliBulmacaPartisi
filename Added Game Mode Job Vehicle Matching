@@ -34,6 +34,7 @@ public class JobVehicleMatchingManager : MonoBehaviour
     List<GameObject> job,vehicle;
     public static List<GameObject> clickedObject;
     private List<Transform> ticks;
+    int match = 0;
     void Start()
     {
         clickedObject = new List<GameObject>();
@@ -45,6 +46,7 @@ public class JobVehicleMatchingManager : MonoBehaviour
         ui = GetComponent<UIDocument>();
         ui.rootVisualElement.Q<Button>("UnloadPuzzle").RegisterCallback<ClickEvent>(Unload);
         Camera.main.backgroundColor = new Color(Random.Range(0, 1.1f), Random.Range(0, 1.1f), Random.Range(0, 1.1f));
+        match = 0;
         for (int i = 0; i < 6; i++)
         {
             int selectedJob = Random.Range(0, job.Count);
@@ -78,6 +80,8 @@ public class JobVehicleMatchingManager : MonoBehaviour
                     ticks.Add(Instantiate(tick, clickedObject[1].transform.position, Quaternion.identity));
                     clickedObject[0].GetComponent<Collider2D>().enabled = false;
                     clickedObject[1].GetComponent<Collider2D>().enabled = false;
+                    match++;
+                    if (match == 5) Invoke(nameof(Congratulations), 1);
                 }
                 clickedObject.Clear();
             }
@@ -88,6 +92,11 @@ public class JobVehicleMatchingManager : MonoBehaviour
                 clickedObject.Clear();
             }
         }
+    }
+    
+    private void Congratulations()
+    {
+        ui.rootVisualElement.Q<Label>("Congratulations").style.display = DisplayStyle.Flex;
     }
 
     private void Unload(ClickEvent e)
@@ -105,4 +114,5 @@ public class JobVehicleMatchingManager : MonoBehaviour
         SceneManager.UnloadSceneAsync(MainMenu.modeName);
     }
 }
+
 
