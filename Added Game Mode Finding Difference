@@ -21,6 +21,8 @@ public class FindClick : MonoBehaviour, IPointerDownHandler
         GetComponent<FindClick>().enabled = false;
         otherDifference.GetComponent<SpriteRenderer>().enabled = true;
         otherDifference.GetComponent<SpriteRenderer>().enabled = true;
+
+        GameObject.Find("FindingDifferenceManager").GetComponent<FindingDifferenceManager>().FindDifference();
     }
 }
 
